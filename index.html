@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Datos - Análisis de Aceite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+    <style>
+        /* General Styles */
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            /* CAMBIO CLAVE AQUÍ: Nuevas fuentes para el cuerpo del texto */
+            font-family: 'Poppins', 'Lato', sans-serif;
+            background: radial-gradient(ellipse at bottom, #0f172a 0%, #000000 100%);
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            line-height: 1.6; /* Mejora la legibilidad */
+            -webkit-font-smoothing: antialiased; /* Suaviza el renderizado */
+            -moz-osx-font-smoothing: grayscale; /* Suaviza el renderizado */
+        }
+
+        /* Mantener Orbitron para el título principal, el resto usará las nuevas fuentes */
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Títulos de sección más legibles y modernos */
+        h2, h3, h4 {
+            font-family: 'Poppins', 'Lato', sans-serif;
+            font-weight: 600; /* Un poco menos negrita para sub-títulos */
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            width: 240px;
+            height: 100vh;
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            border-right: 1px solid #0ff;
+            box-shadow: 0 0 20px #0ff4;
+            z-index: 1000;
+        }
+        .sidebar button {
+            background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+            border: none;
+            padding: 12px;
+            margin: 6px 0;
+            color: white;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 0 0 5px #000;
+            transition: all 0.3s ease-in-out;
+            width: 100%;
+            font-family: 'Poppins', sans-serif; /* Aplicar la nueva fuente a los botones */
+        }
+        .sidebar button:hover {
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            transform: scale(1.03);
+            box-shadow: 0 0 12px #0ff;
+        }
+
+        /* Main Container */
+        .container {
+            margin-left: 260px;
+            padding: 20px;
+            width: calc(100% - 260px);
+        }
+
+        /* Form Styles */
+        .formulario {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            margin-bottom: 24px;
+            display: none;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        .formulario.active {
+            display: block;
+        }
+        .formulario label {
+            display: block;
+            margin: 12px 0 6px;
+            font-weight: 600; /* Un poco más ligero que bold, más moderno */
+            color: #cbd5e1;
+            font-family: 'Lato', sans-serif; /* Fuente para etiquetas */
+        }
+        .formulario input, .formulario select, .formulario textarea {
+            width: 100%;
+            padding: 12px;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: #fff;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-family: 'Lato', sans-serif; /* Aplicar nueva fuente a inputs */
+            font-size: 1em; /* Asegurar un tamaño de fuente legible */
+        }
+        .formulario button {
+            background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+            border: none;
+            padding: 12px 24px;
+            color: white;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: 0.3s ease;
+            box-shadow: 0 0 10px #0ff2;
+            font-family: 'Poppins', sans-serif; /* Aplicar la nueva fuente a los botones del formulario */
+        }
+        .formulario button:hover {
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            box-shadow: 0 0 20px #0ff;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            color: #cbd5e1;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #334155;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 0.95em; /* Ligeramente más grande */
+            vertical-align: top;
+            font-family: 'Lato', sans-serif; /* Nueva fuente para el contenido de la tabla */
+        }
+        th {
+            background-color: #0f172a;
+            color: #38bdf8;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            font-family: 'Poppins', sans-serif; /* Nueva fuente para los encabezados de la tabla */
+            font-weight: 600;
+        }
+        .fila-eliminada {
+            background-color: #7f1d1d;
+            color: #d1d5db;
+            text-decoration: line-through;
+        }
+        .tabla-scroll {
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        .tabla-scroll table {
+            margin-top: 0;
+        }
+        .acciones-celda button {
+            padding: 5px 10px;
+            margin: 2px;
+            font-size: 0.8em;
+            border-radius: 5px;
+            background: #06b6d4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: 'Lato', sans-serif; /* Fuente para botones de acción en tabla */
+        }
+        .acciones-celda button:hover {
+            background: #0ea5e9;
+        }
+        .acciones-celda button.eliminar {
+            background: #dc2626;
+        }
+        .acciones-celda button.eliminar:hover {
+            background: #ef4444;
+        }
+
+        /* Stats Section */
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 16px;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        .stat-box h3 {
+            margin: 0;
+            color: #94a3b8;
+            font-family: 'Poppins', sans-serif; /* Nueva fuente para títulos de stats */
+            font-weight: 600;
+        }
+        .stat-box p {
+            font-size: 1.6rem; /* Un poco más grande para destacar */
+            color: #06f6f6;
+            margin: 0.5rem 0 0;
+            font-family: 'Orbitron', sans-serif; /* Mantener Orbitron para los números de estadísticas */
+        }
+
+        /* Custom Message Box */
+        .message-box-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .message-box-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .message-box {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #0ff;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+            font-family: 'Lato', sans-serif; /* Nueva fuente para el contenido del mensaje */
+        }
+        .message-box-overlay.show .message-box {
+            transform: translateY(0);
+        }
+        .message-box h4 {
+            margin-top: 0;
+            color: #38bdf8;
+            font-size: 1.5rem;
+            text-shadow: 0 0 8px #0ff;
+            font-family: 'Poppins', sans-serif; /* Nueva fuente para el título del mensaje */
+            font-weight: 600;
+        }
+        .message-box p {
+            margin-bottom: 20px;
+            color: #cbd5e1;
+            word-wrap: break-word;
+        }
+        .message-box button {
+            background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s ease;
+            margin: 0 5px;
+            font-family: 'Poppins', sans-serif; /* Nueva fuente para botones del mensaje */
+        }
+        .message-box button:hover {
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            box-shadow: 0 0 15px #0ff;
+        }
+        .message-box button.cancelar {
+            background: #64748b;
+        }
+        .message-box button.cancelar:hover {
+            background: #94a3b8;
+        }
+
+        /* Print Specific Styles */
+        @media print {
+            body {
+                background: none;
+                color: #000;
+                font-family: 'Lato', sans-serif; /* Fuente legible y redonda para impresión */
+                margin: 0;
+                padding: 0;
+                overflow: visible;
+            }
+            .sidebar,
+            .container > h1,
+            .stats,
+            .formulario:not(#planificacion),
+            .message-box-overlay,
+            button,
+            input,
+            select,
+            textarea,
+            .welcome-message-box
+            {
+                display: none !important;
+            }
+            .container {
+                margin: 0;
+                padding: 5mm;
+                width: 100%;
+            }
+            #planificacion.formulario.active {
+                display: block !important;
+                background: none;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+            }
+            #planificacion h3 {
+                color: #000;
+                text-align: center;
+                margin-bottom: 2mm;
+                font-size: 0.8em;
+                font-weight: normal;
+                font-family: 'Lato', sans-serif; /* Asegurar fuente para impresión */
+            }
+            #planificacion p {
+                display: none !important;
+            }
+            #tablaRuta {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 0;
+                color: #000;
+                background: none;
+            }
+            #tablaRuta th, #tablaRuta td {
+                border: 1px solid #ccc;
+                padding: 2mm 3mm;
+                font-size: 0.7em;
+                white-space: nowrap;
+                font-family: 'Lato', sans-serif; /* Asegurar fuente para impresión */
+            }
+            #tablaRuta th {
+                background-color: #eee;
+                color: #333;
+            }
+            #tablaRuta .estado-dropdown {
+                display: none;
+            }
+            #tablaRuta .print-status {
+                display: inline-block;
+            }
+            .acciones-celda {
+                display: none;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                border-right: none;
+                border-bottom: 1px solid #0ff;
+                padding: 0.5rem;
+            }
+            .sidebar button {
+                flex: 1 1 auto;
+                margin: 5px;
+                font-size: 0.8rem;
+                padding: 8px;
+            }
+            .container {
+                margin-left: 0;
+                width: 100%;
+                padding: 10px;
+            }
+            .stats {
+                flex-direction: column;
+            }
+            .stat-box {
+                min-width: unset;
+                width: 100%;
+            }
+            .formulario {
+                padding: 15px;
+            }
+            th, td {
+                padding: 6px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Styles for search by code section */
+        #resultadoBusquedaCodigo h4 {
+            color: #38bdf8;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 5px;
+            font-family: 'Poppins', sans-serif; /* Nueva fuente */
+            font-weight: 600;
+        }
+
+        /* Adjustments for the new table structure */
+        #infoMotorCodigoTable, #ultimosEstadosAnalisisTable {
+            margin-bottom: 20px;
+        }
+        #infoMotorCodigoTable th, #infoMotorCodigoTable td,
+        #ultimosEstadosAnalisisTable th, #ultimosEstadosAnalisisTable td {
+            text-align: center;
+            white-space: nowrap;
+            font-family: 'Lato', sans-serif; /* Nueva fuente */
+        }
+        #infoMotorCodigoTable th, #ultimosEstadosAnalisisTable th {
+            font-size: 0.85em; /* Ligeramente más grande */
+            font-family: 'Poppins', sans-serif; /* Nueva fuente */
+            font-weight: 600;
+        }
+        #infoMotorCodigoTable td, #ultimosEstadosAnalisisTable td {
+            font-weight: bold;
+            color: #06f6f6;
+            font-family: 'Lato', sans-serif; /* Nueva fuente */
+        }
+
+        /* Styles for clickable cells */
+        .clickable-cell {
+            cursor: pointer;
+            text-decoration: underline;
+            color: #87ceeb;
+        }
+        .clickable-cell:hover {
+            color: #0ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <button onclick="mostrarSeccion(0)">➕ Ingresar Motores</button>
+        <button onclick="mostrarSeccion(3)">🧪 Ingresar Análisis</button>
+        <button onclick="mostrarSeccion(4)">🔧 Ingresar Correcciones</button>
+        <button onclick="mostrarSeccion(6)">🔎 Buscar por Máquina</button>
+        <button onclick="mostrarSeccion(5)">🔍 Buscar por Código</button>
+        <button onclick="mostrarSeccion(7)">📊 Cuadro Comparativo</button>
+        <button onclick="mostrarSeccion(8)">📈 Gráficos de Tendencia</button>
+        <button onclick="mostrarSeccion(1)">📋 Listado General</button>
+        <button onclick="mostrarSeccion(2)">🗓 Planificación por Ruta</button>
+    </div>
+    <div class="container">
+        <h1 style="color:#38bdf8;text-shadow: 0 0 10px #0ff">Base de Datos - Análisis de Aceite</h1>
+
+        <div class="stats">
+            <div class="stat-box">
+                <h3>Total Motores</h3>
+                <p id="totalMotores">0</p>
+            </div>
+            <div class="stat-box">
+                <h3>Últimos Análisis</h3>
+                <p id="ultimoAnalisis">-</p>
+            </div>
+            <div class="stat-box">
+                <h3>Estado Crítico</h3>
+                <p id="estadoCritico">0</p>
+            </div>
+        </div>
+
+        <div class="welcome-message-box" style="background: rgba(30, 41, 59, 0.5);backdrop-filter: blur(8px);padding:20px;border-radius:16px;margin-bottom:1rem;box-shadow: 0 0 20px rgba(0,255,255,0.2);">
+            <h2 style="color:white;text-shadow: 0 0 5px #38bdf8">Bienvenido al sistema de análisis de aceite para motoreductores</h2>
+            <p style="color:#cbd5e1">Selecciona una opción del menú lateral para comenzar.</p>
+        </div>
+
+        <div class="formulario" id="formMotores">
+            <h3>Formulario de Ingreso de Motores</h3>
+            <label for="codigo">Código del Motor <span style="color: red;">*</span></label>
+            <input type="text" id="codigo" required>
+            <label for="maquina">Nombre de la Máquina <span style="color: red;">*</span></label>
+            <input type="text" id="maquina" required>
+            <label for="ubicacion">Ubicación <span style="color: red;">*</span></label>
+            <input type="text" id="ubicacion" required>
+            <label for="tipo_lubricacion">Tipo de Lubricación <span style="color: red;">*</span></label>
+            <select id="tipo_lubricacion" required>
+                <option value="Aceite" selected>Aceite</option>
+                <option value="Grasa">Grasa</option>
+                <option value="Sellado">Sellado</option>
+            </select>
+            <button onclick="guardarMotor()">Guardar Motor</button>
+        </div>
+
+        <div class="formulario" id="listadoGeneral">
+            <h3>Listado General</h3>
+            <div style="margin-bottom: 15px;">
+                <button onclick="confirmarBorrarTodo()" class="eliminar" style="background-color: #dc2626;">Eliminar Todos los Datos</button>
+            </div>
+            <div class="tabla-scroll">
+                <table id="tablaListado">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Máquina</th>
+                            <th>Ubicación</th>
+                            <th>Tipo Lubricación</th>
+                            <th>Últ. Análisis</th>
+                            <th>Estado Análisis</th>
+                            <th>Obs. Corrección</th>
+                            <th>Últ. Corrección</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="formulario" id="planificacion">
+            <h3>PLANIFICACIÓN POR RUTA</h3>
+            <div style="margin-bottom: 15px;">
+                <button onclick="imprimirPlanificacion()">Imprimir Planificación</button>
+                <label for="num_motores_proceso" style="margin-left: 20px;">Cambiar a "En Proceso" los primeros:</label>
+                <input type="number" id="num_motores_proceso" value="10" min="1" style="width: 80px; display: inline-block;">
+                <button onclick="cambiarEstadoMasivo()">Aplicar</button>
+
+                <label for="filtro_estado_ruta" style="margin-left: 20px;">Filtrar por Estado:</label>
+                <select id="filtro_estado_ruta" onchange="actualizarTablaRuta()">
+                    <option value="todos">Todos</option>
+                    <option value="En espera">En espera</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Realizado">Realizado</option>
+                </select>
+            </div>
+            <p style="color: #cbd5e1; font-size: 0.9em;">Puedes arrastrar y soltar filas para reordenar la planificación.</p>
+            <div class="tabla-scroll">
+                <table id="tablaRuta">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Máquina</th>
+                            <th>Ubicación</th>
+                            <th>Últ. Análisis</th>
+                            <th>Estado Análisis</th>
+                            <th>Estado Ruta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sortable-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="formulario" id="formAnalisis">
+            <h3>Ingreso de Análisis de Aceite</h3>
+            <label for="analisis_codigo_motor">Código del Motor <span style="color: red;">*</span></label>
+            <input type="text" id="analisis_codigo_motor" placeholder="Ingrese el código del motor existente" required>
+            <label for="analisis_fecha">Fecha del Análisis <span style="color: red;">*</span></label>
+            <input type="date" id="analisis_fecha" required>
+            <label for="analisis_num_particulas">Número de Partículas</label>
+            <input type="text" id="analisis_num_particulas" placeholder="Ej: 1234 (opcional)">
+            <label for="analisis_observaciones">Observaciones</label>
+            <textarea id="analisis_observaciones" rows="4"></textarea>
+            <label for="analisis_sugerencia">Sugerencia</label>
+            <textarea id="analisis_sugerencia" rows="4"></textarea>
+            <label for="analisis_estado">Estado del Análisis <span style="color: red;">*</span></label>
+            <select id="analisis_estado" required>
+                <option value="normal">Normal</option>
+                <option value="advertencia">Advertencia</option>
+                <option value="crítico">Crítico</option>
+            </select>
+            <button onclick="guardarAnalisis()">Guardar Análisis</button>
+        </div>
+
+        <div class="formulario" id="formCorrecciones">
+            <h3>Ingreso de Correcciones</h3>
+            <label for="correccion_codigo_motor">Código del Motor <span style="color: red;">*</span></label>
+            <input type="text" id="correccion_codigo_motor" placeholder="Ingrese el código del motor existente" required>
+            <label for="correccion_fecha">Fecha de la Corrección <span style="color: red;">*</span></label>
+            <input type="date" id="correccion_fecha" required>
+            <label for="correccion_observacion">Observación de la Corrección <span style="color: red;">*</span></label>
+            <textarea id="correccion_observacion" rows="4" required></textarea>
+            <button onclick="guardarCorreccion()">Guardar Corrección</button>
+        </div>
+
+        <div class="formulario" id="formBuscarCodigo">
+            <h3>Buscar por Código</h3>
+            <label for="buscar_codigo_input">Ingrese el Código del Motor:</label>
+            <input type="text" id="buscar_codigo_input" placeholder="Ej: MTR-001">
+            <div style="margin-top: 10px; margin-bottom: 20px;">
+                <button onclick="buscarPorCodigo()">Buscar</button>
+                <button onclick="habilitarEdicionDesdeBusqueda()" style="margin-left: 10px;">Modificar Información del Motor</button>
+            </div>
+
+            <div id="resultadoBusquedaCodigo">
+                <h4>Información General del Motor:</h4>
+                <div class="tabla-scroll">
+                    <table id="infoMotorCodigoTable">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Máquina</th>
+                                <th>Ubicación</th>
+                                <th>Tipo Lubricación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="infoMotorCodigo_codigo">N/A</td>
+                                <td id="infoMotorCodigo_maquina">N/A</td>
+                                <td id="infoMotorCodigo_ubicacion">N/A</td>
+                                <td id="infoMotorCodigo_tipoLubricacion">N/A</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>Últimos Estados de Análisis:</h4>
+                <div class="tabla-scroll">
+                    <table id="ultimosEstadosAnalisisTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha Anterior</th>
+                                <th>Estado Anterior</th>
+                                <th>N° Partículas Anterior</th>
+                                <th>Fecha Actual</th>
+                                <th>Estado Actual</th>
+                                <th>N° Partículas Actual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="analisis_fecha_anterior">N/A</td>
+                                <td id="analisis_estado_anterior">N/A</td>
+                                <td id="analisis_particulas_anterior">N/A</td>
+                                <td id="analisis_fecha_actual">N/A</td>
+                                <td id="analisis_estado_actual">N/A</td>
+                                <td id="analisis_particulas_actual">N/A</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>Historial Completo de Análisis:</h4>
+                <div class="tabla-scroll">
+                    <table id="tablaAnalisisCodigo">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>N° Partículas</th>
+                                <th>Estado</th>
+                                <th>Sugerencia</th>
+                                <th>Observaciones</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <h4>Historial Completo de Correcciones:</h4>
+                <div class="tabla-scroll">
+                    <table id="tablaCorreccionesCodigo">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Observación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="formulario" id="formBuscarMaquina">
+            <h3>Buscar por Máquina</h3>
+            <label for="buscar_maquina_select">Seleccione la Máquina:</label>
+            <select id="buscar_maquina_select" onchange="buscarPorMaquina()">
+                <option value="">Seleccione una máquina</option>
+            </select>
+            <div id="resultadoBusquedaMaquina">
+                <div class="tabla-scroll">
+                    <table id="tablaResultadosMaquina">
+                        <thead>
+                            <tr>
+                                <th>Código Motor</th>
+                                <th>Máquina</th>
+                                <th>Ubicación</th>
+                                <th>Tipo Lubricación</th>
+                                <th>Últ. Análisis</th>
+                                <th>Estado Análisis</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="formulario" id="formComparativo">
+            <h3>Cuadro Comparativo</h3>
+            <p>Selecciona los códigos de motor para comparar (separados por comas):</p>
+            <input type="text" id="comparativo_codigos" placeholder="Ej: MTR-001, MTR-002">
+            <button onclick="generarCuadroComparativo()">Generar Cuadro</button>
+            <div class="tabla-scroll">
+                <table id="tablaComparativa">
+                    <thead>
+                        <tr>
+                            <th>Código Motor</th>
+                            <th>Máquina</th>
+                            <th>Ubicación</th>
+                            <th>Tipo Lubricación</th>
+                            <th>Última Fecha Análisis</th>
+                            <th>Sugerencia</th>
+                            <th>Último Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="formulario" id="formGraficos">
+            <h3>Gráficos de Tendencia</h3>
+            <label for="grafico_codigo_motor">Código del Motor:</label>
+            <input type="text" id="grafico_codigo_motor" placeholder="Ingrese el código del motor">
+            <button onclick="generarGraficos()">Generar Gráficos</button>
+
+            <p id="grafico_mensaje" style="text-align: center; color: #f87171;"></p>
+
+            <div style="width: 80%; margin: 20px auto; height: 350px;">
+                <h4>Tendencia de Estado del Análisis</h4>
+                <canvas id="analisisChart"></canvas>
+            </div>
+            <div style="width: 80%; margin: 40px auto 20px; height: 350px;">
+                <h4>Tendencia de Número de Partículas</h4>
+                <canvas id="particulasChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBoxOverlay" class="message-box-overlay">
+        <div class="message-box">
+            <h4 id="messageBoxTitle"></h4>
+            <p id="messageBoxContent"></p>
+            <div id="messageBoxButtons">
+                <button onclick="hideMessageBox()">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModalOverlay" class="message-box-overlay">
+        <div class="message-box">
+            <h4>Editar Motor</h4>
+            <label for="edit_codigo">Código del Motor:</label>
+            <input type="text" id="edit_codigo" disabled>
+            <label for="edit_maquina">Nombre de la Máquina:</label>
+            <input type="text" id="edit_maquina">
+            <label for="edit_ubicacion">Ubicación:</label>
+            <input type="text" id="edit_ubicacion">
+            <label for="edit_tipo_lubricacion">Tipo de Lubricación:</label>
+            <select id="edit_tipo_lubricacion">
+                <option value="Aceite">Aceite</option>
+                <option value="Grasa">Grasa</option>
+                <option value="Sellado">Sellado</option>
+            </select>
+            <div style="margin-top: 20px;">
+                <button onclick="guardarEdicionMotor()">Guardar Cambios</button>
+                <button class="cancelar" onclick="hideEditModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editAnalisisModalOverlay" class="message-box-overlay">
+        <div class="message-box">
+            <h4>Editar Análisis</h4>
+            <label for="edit_analisis_fecha">Fecha del Análisis <span style="color: red;">*</span></label>
+            <input type="date" id="edit_analisis_fecha" required>
+            <label for="edit_analisis_num_particulas">Número de Partículas</label>
+            <input type="text" id="edit_analisis_num_particulas">
+            <label for="edit_analisis_observaciones">Observaciones</label>
+            <textarea id="edit_analisis_observaciones" rows="4"></textarea>
+            <label for="edit_analisis_sugerencia">Sugerencia</label>
+            <textarea id="edit_analisis_sugerencia" rows="4"></textarea>
+            <label for="edit_analisis_estado">Estado del Análisis <span style="color: red;">*</span></label>
+            <select id="edit_analisis_estado" required>
+                <option value="normal">Normal</option>
+                <option value="advertencia">Advertencia</option>
+                <option value="crítico">Crítico</option>
+            </select>
+            <div style="margin-top: 20px;">
+                <button onclick="guardarEdicionAnalisis()">Guardar Cambios</button>
+                <button class="cancelar" onclick="hideEditAnalisisModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editCorreccionModalOverlay" class="message-box-overlay">
+        <div class="message-box">
+            <h4>Editar Corrección</h4>
+            <label for="edit_correccion_fecha">Fecha de la Corrección <span style="color: red;">*</span></label>
+            <input type="date" id="edit_correccion_fecha" required>
+            <label for="edit_correccion_observacion">Observación de la Corrección <span style="color: red;">*</span></label>
+            <textarea id="edit_correccion_observacion" rows="4" required></textarea>
+            <div style="margin-top: 20px;">
+                <button onclick="guardarEdicionCorreccion()">Guardar Cambios</button>
+                <button class="cancelar" onclick="hideEditCorreccionModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Variables Globales ---
+        let motores = [];
+        let analisis = [];
+        let correcciones = [];
+        let currentEditMotorCode = null; // Para saber qué motor se está editando
+        let currentEditAnalisisIndex = null; // Para saber qué análisis se está editando
+        let currentEditCorreccionIndex = null; // Para saber qué corrección se está editando
+
+        // Referencias a los elementos del DOM (formularios)
+        const formularios = [
+            document.getElementById('formMotores'),          // 0
+            document.getElementById('listadoGeneral'),       // 1
+            document.getElementById('planificacion'),        // 2
+            document.getElementById('formAnalisis'),         // 3
+            document.getElementById('formCorrecciones'),     // 4
+            document.getElementById('formBuscarCodigo'),     // 5
+            document.getElementById('formBuscarMaquina'),    // 6
+            document.getElementById('formComparativo'),      // 7
+            document.getElementById('formGraficos')          // 8
+        ];
+        const welcomeMessageBox = document.querySelector('.welcome-message-box');
+
+        // --- Funciones de Utilidad ---
+
+        // Función para mostrar mensajes personalizados (Alert/Confirm)
+        function showMessageBox(title, message, type = 'alert', onConfirm = null) {
+            const messageBoxOverlay = document.getElementById('messageBoxOverlay');
+            const messageBoxTitle = document.getElementById('messageBoxTitle');
+            const messageBoxContent = document.getElementById('messageBoxContent');
+            const messageBoxButtons = document.getElementById('messageBoxButtons');
+
+            messageBoxTitle.textContent = title;
+            messageBoxContent.textContent = message;
+            messageBoxButtons.innerHTML = ''; // Limpiar botones anteriores
+
+            if (type === 'confirm') {
+                const confirmBtn = document.createElement('button');
+                confirmBtn.textContent = 'Aceptar';
+                confirmBtn.onclick = () => {
+                    hideMessageBox();
+                    if (onConfirm) onConfirm();
+                };
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = 'Cancelar';
+                cancelBtn.className = 'cancelar';
+                cancelBtn.onclick = hideMessageBox;
+                messageBoxButtons.appendChild(confirmBtn);
+                messageBoxButtons.appendChild(cancelBtn);
+            } else { // 'alert'
+                const okBtn = document.createElement('button');
+                okBtn.textContent = 'Aceptar';
+                okBtn.onclick = hideMessageBox;
+                messageBoxButtons.appendChild(okBtn);
+            }
+
+            messageBoxOverlay.classList.add('show');
+        }
+
+        function hideMessageBox() {
+            document.getElementById('messageBoxOverlay').classList.remove('show');
+        }
+
+        // Función para formatear fechas a YYYY-MM-DD (para inputs de fecha)
+        function formatDateToInput(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Función para formatear fechas a DD-MM-YYYY (para tablas)
+        function formatDateToDisplay(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString + 'T00:00:00'); // Añadir T00:00:00 para evitar problemas de zona horaria
+            if (isNaN(date.getTime())) return 'N/A'; // Verificar si la fecha es inválida
+            return date.toLocaleDateString('es-CL', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        // --- Funciones de Gestión de Datos (LocalStorage) ---
+
+        function cargarDatos() {
+            const storedMotores = localStorage.getItem('motores');
+            const storedAnalisis = localStorage.getItem('analisis');
+            const storedCorrecciones = localStorage.getItem('correcciones');
+            if (storedMotores) {
+                motores = JSON.parse(storedMotores);
+            }
+            if (storedAnalisis) {
+                analisis = JSON.parse(storedAnalisis);
+            }
+            if (storedCorrecciones) {
+                correcciones = JSON.parse(storedCorrecciones);
+            }
+        }
+
+        function guardarDatos() {
+            localStorage.setItem('motores', JSON.stringify(motores));
+            localStorage.setItem('analisis', JSON.stringify(analisis));
+            localStorage.setItem('correcciones', JSON.stringify(correcciones));
+            actualizarEstadisticas();
+            actualizarListaMaquinas(); // Asegurar que la lista de máquinas esté actualizada
+        }
+
+        // --- Funciones de UI ---
+
+        function mostrarSeccion(index) {
+            // Ocultar el mensaje de bienvenida si está visible
+            if (welcomeMessageBox) {
+                welcomeMessageBox.style.display = 'none';
+            }
+
+            formularios.forEach((form, i) => {
+                if (i === index) {
+                    form.classList.add('active');
+                } else {
+                    form.classList.remove('active');
+                }
+            });
+
+            // Acciones específicas al mostrar una sección
+            if (index === 1) { // Listado General
+                actualizarTablaListado();
+            } else if (index === 2) { // Planificación por Ruta
+                actualizarTablaRuta();
+                initSortable(); // Inicializar el drag and drop
+            } else if (index === 6) { // Buscar por Máquina
+                actualizarListaMaquinas();
+                document.getElementById('buscar_maquina_select').value = ""; // Limpiar selección
+                document.getElementById('tablaResultadosMaquina').getElementsByTagName('tbody')[0].innerHTML = ''; // Limpiar tabla
+            } else if (index === 5) { // Buscar por Código
+                // Limpiar campos y resultados anteriores
+                document.getElementById('buscar_codigo_input').value = '';
+                limpiarResultadosBusquedaCodigo();
+            } else if (index === 7) { // Cuadro Comparativo
+                document.getElementById('comparativo_codigos').value = '';
+                document.getElementById('tablaComparativa').getElementsByTagName('tbody')[0].innerHTML = '';
+            } else if (index === 8) { // Gráficos de Tendencia
+                document.getElementById('grafico_codigo_motor').value = '';
+                document.getElementById('grafico_mensaje').textContent = '';
+                if (window.analisisChartInstance) window.analisisChartInstance.destroy();
+                if (window.particulasChartInstance) window.particulasChartInstance.destroy();
+            }
+        }
+
+        function actualizarEstadisticas() {
+            document.getElementById('totalMotores').textContent = motores.length;
+
+            if (analisis.length > 0) {
+                // Ordenar análisis por fecha para encontrar el más reciente
+                const sortedAnalisis = [...analisis].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                const ultimo = sortedAnalisis[0];
+                const motorAsociado = motores.find(m => m.codigo === ultimo.codigoMotor);
+                document.getElementById('ultimoAnalisis').textContent = `[${ultimo.codigoMotor}] ${formatDateToDisplay(ultimo.fecha)}`;
+            } else {
+                document.getElementById('ultimoAnalisis').textContent = '-';
+            }
+
+            const motoresCriticos = motores.filter(motor => {
+                const ultimosAnalisisMotor = analisis
+                    .filter(a => a.codigoMotor === motor.codigo)
+                    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                return ultimosAnalisisMotor.length > 0 && ultimosAnalisisMotor[0].estado === 'crítico';
+            });
+            document.getElementById('estadoCritico').textContent = motoresCriticos.length;
+        }
+
+        function limpiarResultadosBusquedaCodigo() {
+            document.getElementById('infoMotorCodigo_codigo').textContent = 'N/A';
+            document.getElementById('infoMotorCodigo_maquina').textContent = 'N/A';
+            document.getElementById('infoMotorCodigo_ubicacion').textContent = 'N/A';
+            document.getElementById('infoMotorCodigo_tipoLubricacion').textContent = 'N/A';
+
+            document.getElementById('analisis_fecha_anterior').textContent = 'N/A';
+            document.getElementById('analisis_estado_anterior').textContent = 'N/A';
+            document.getElementById('analisis_particulas_anterior').textContent = 'N/A';
+            document.getElementById('analisis_fecha_actual').textContent = 'N/A';
+            document.getElementById('analisis_estado_actual').textContent = 'N/A';
+            document.getElementById('analisis_particulas_actual').textContent = 'N/A';
+
+            document.getElementById('tablaAnalisisCodigo').getElementsByTagName('tbody')[0].innerHTML = '';
+            document.getElementById('tablaCorreccionesCodigo').getElementsByTagName('tbody')[0].innerHTML = '';
+        }
+
+        // --- CRUD Motores ---
+
+        function guardarMotor() {
+            const codigo = document.getElementById('codigo').value.trim().toUpperCase();
+            const maquina = document.getElementById('maquina').value.trim();
+            const ubicacion = document.getElementById('ubicacion').value.trim();
+            const tipo_lubricacion = document.getElementById('tipo_lubricacion').value;
+
+            if (!codigo || !maquina || !ubicacion || !tipo_lubricacion) {
+                showMessageBox('Error', 'Todos los campos marcados con * son obligatorios.');
+                return;
+            }
+
+            if (motores.some(motor => motor.codigo === codigo)) {
+                showMessageBox('Error', `El código de motor "${codigo}" ya existe.`);
+                return;
+            }
+
+            const nuevoMotor = {
+                codigo: codigo,
+                maquina: maquina,
+                ubicacion: ubicacion,
+                tipo_lubricacion: tipo_lubricacion,
+                fechaCreacion: formatDateToInput(new Date())
+            };
+            motores.push(nuevoMotor);
+            guardarDatos();
+            showMessageBox('Éxito', 'Motor guardado correctamente.');
+            document.getElementById('formMotores').reset(); // Limpiar formulario
+            actualizarTablaListado(); // Refrescar tabla en Listado General
+        }
+
+        function actualizarTablaListado() {
+            const tbody = document.getElementById('tablaListado').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; // Limpiar tabla
+
+            // Ordenar motores alfabéticamente por código
+            const motoresOrdenados = [...motores].sort((a, b) => a.codigo.localeCompare(b.codigo));
+
+            motoresOrdenados.forEach(motor => {
+                const row = tbody.insertRow();
+
+                // Buscar el último análisis para este motor
+                const ultimosAnalisisMotor = analisis
+                    .filter(a => a.codigoMotor === motor.codigo)
+                    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                const ultimoAnalisis = ultimosAnalisisMotor.length > 0 ? ultimosAnalisisMotor[0] : null;
+
+                // Buscar la última corrección para este motor
+                const ultimasCorreccionesMotor = correcciones
+                    .filter(c => c.codigoMotor === motor.codigo)
+                    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                const ultimaCorreccion = ultimasCorreccionesMotor.length > 0 ? ultimasCorreccionesMotor[0] : null;
+
+
+                row.insertCell(0).textContent = motor.codigo;
+                row.insertCell(1).textContent = motor.maquina;
+                row.insertCell(2).textContent = motor.ubicacion;
+                row.insertCell(3).textContent = motor.tipo_lubricacion;
+                row.insertCell(4).textContent = ultimoAnalisis ? formatDateToDisplay(ultimoAnalisis.fecha) : 'N/A';
+                row.insertCell(5).textContent = ultimoAnalisis ? ultimoAnalisis.estado.charAt(0).toUpperCase() + ultimoAnalisis.estado.slice(1) : 'N/A';
+                row.insertCell(6).textContent = ultimaCorreccion ? ultimaCorreccion.observacion : 'N/A';
+                row.insertCell(7).textContent = ultimaCorreccion ? formatDateToDisplay(ultimaCorreccion.fecha) : 'N/A';
+
+                const accionesCell = row.insertCell(8);
+                accionesCell.className = 'acciones-celda';
+
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Editar';
+                editBtn.onclick = () => editarMotor(motor.codigo);
+                accionesCell.appendChild(editBtn);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Eliminar';
+                deleteBtn.className = 'eliminar';
+                deleteBtn.onclick = () => confirmarEliminarMotor(motor.codigo);
+                accionesCell.appendChild(deleteBtn);
+            });
+        }
+
+        function confirmarEliminarMotor(codigo) {
+            showMessageBox(
+                'Confirmar Eliminación',
+                `¿Estás seguro de que deseas eliminar el motor con código ${codigo} y todos sus análisis/correcciones asociados? Esta acción es irreversible.`,
+                'confirm',
+                () => eliminarMotor(codigo)
+            );
+        }
+
+        function eliminarMotor(codigo) {
+            // Eliminar el motor
+            const initialLength = motores.length;
+            motores = motores.filter(motor => motor.codigo !== codigo);
+
+            // Eliminar análisis asociados
+            analisis = analisis.filter(a => a.codigoMotor !== codigo);
+
+            // Eliminar correcciones asociadas
+            correcciones = correcciones.filter(c => c.codigoMotor !== codigo);
+
+            if (motores.length < initialLength) {
+                guardarDatos();
+                actualizarTablaListado();
+                showMessageBox('Éxito', `El motor ${codigo} y sus datos asociados han sido eliminados.`);
+            } else {
+                showMessageBox('Error', `No se encontró el motor con código ${codigo}.`);
+            }
+        }
+
+        function editarMotor(codigo) {
+            const motor = motores.find(m => m.codigo === codigo);
+            if (!motor) {
+                showMessageBox('Error', 'Motor no encontrado para edición.');
+                return;
+            }
+
+            currentEditMotorCode = codigo; // Guardar el código del motor que se está editando
+
+            document.getElementById('edit_codigo').value = motor.codigo;
+            document.getElementById('edit_maquina').value = motor.maquina;
+            document.getElementById('edit_ubicacion').value = motor.ubicacion;
+            document.getElementById('edit_tipo_lubricacion').value = motor.tipo_lubricacion;
+
+            document.getElementById('editModalOverlay').classList.add('show');
+        }
+
+        function guardarEdicionMotor() {
+            const codigo = document.getElementById('edit_codigo').value.trim().toUpperCase(); // No se edita el código
+            const maquina = document.getElementById('edit_maquina').value.trim();
+            const ubicacion = document.getElementById('edit_ubicacion').value.trim();
+            const tipo_lubricacion = document.getElementById('edit_tipo_lubricacion').value;
+
+            if (!maquina || !ubicacion || !tipo_lubricacion) {
+                showMessageBox('Error', 'Todos los campos son obligatorios.');
+                return;
+            }
+
+            const motorIndex = motores.findIndex(m => m.codigo === currentEditMotorCode);
+            if (motorIndex !== -1) {
+                motores[motorIndex].maquina = maquina;
+                motores[motorIndex].ubicacion = ubicacion;
+                motores[motorIndex].tipo_lubricacion = tipo_lubricacion;
+                guardarDatos();
+                showMessageBox('Éxito', `Motor ${currentEditMotorCode} actualizado correctamente.`);
+                hideEditModal();
+                actualizarTablaListado(); // Refrescar la tabla si estamos en el listado general
+                // También refrescar la búsqueda por código si estamos en ella y se editó el motor actual
+                if (document.getElementById('formBuscarCodigo').classList.contains('active') && document.getElementById('buscar_codigo_input').value.toUpperCase() === currentEditMotorCode) {
+                    buscarPorCodigo();
+                }
+            } else {
+                showMessageBox('Error', 'No se pudo encontrar el motor para actualizar.');
+            }
+        }
+
+        function hideEditModal() {
+            document.getElementById('editModalOverlay').classList.remove('show');
+            currentEditMotorCode = null;
+        }
+
+        function habilitarEdicionDesdeBusqueda() {
+            const codigoBuscado = document.getElementById('buscar_codigo_input').value.trim().toUpperCase();
+            if (codigoBuscado) {
+                editarMotor(codigoBuscado);
+            } else {
+                showMessageBox('Información', 'Por favor, busque un motor primero para habilitar la edición.');
+            }
+        }
+
+        function confirmarBorrarTodo() {
+            showMessageBox(
+                '¡ADVERTENCIA! Eliminar Todos los Datos',
+                'Esta acción eliminará ABSOLUTAMENTE TODOS los motores, análisis y correcciones de la base de datos. Esta acción es irreversible.',
+                'confirm',
+                () => {
+                    localStorage.clear(); // Elimina todo del LocalStorage
+                    motores = [];
+                    analisis = [];
+                    correcciones = [];
+                    guardarDatos(); // Guardar arrays vacíos
+                    actualizarTablaListado();
+                    showMessageBox('Éxito', 'Todos los datos han sido eliminados.');
+                }
+            );
+        }
+
+        // --- CRUD Análisis ---
+
+        function guardarAnalisis() {
+            const codigoMotor = document.getElementById('analisis_codigo_motor').value.trim().toUpperCase();
+            const fecha = document.getElementById('analisis_fecha').value;
+            const numParticulas = document.getElementById('analisis_num_particulas').value.trim();
+            const observaciones = document.getElementById('analisis_observaciones').value.trim();
+            const sugerencia = document.getElementById('analisis_sugerencia').value.trim();
+            const estado = document.getElementById('analisis_estado').value;
+
+            if (!codigoMotor || !fecha || !estado) {
+                showMessageBox('Error', 'Los campos de Código de Motor, Fecha y Estado son obligatorios.');
+                return;
+            }
+
+            const motorExiste = motores.some(motor => motor.codigo === codigoMotor);
+            if (!motorExiste) {
+                showMessageBox('Error', `El código de motor "${codigoMotor}" no existe. Por favor, ingréselo primero.`);
+                return;
+            }
+
+            const nuevoAnalisis = {
+                id: Date.now(), // ID único para el análisis
+                codigoMotor: codigoMotor,
+                fecha: fecha,
+                numParticulas: numParticulas,
+                observaciones: observaciones,
+                sugerencia: sugerencia,
+                estado: estado
+            };
+
+            analisis.push(nuevoAnalisis);
+            guardarDatos();
+            showMessageBox('Éxito', 'Análisis guardado correctamente.');
+            document.getElementById('formAnalisis').reset();
+            actualizarTablaListado(); // Refrescar el listado general
+        }
+
+        function editarAnalisis(analisisId) {
+            const analisisToEdit = analisis.find(a => a.id === analisisId);
+            if (!analisisToEdit) {
+                showMessageBox('Error', 'Análisis no encontrado para edición.');
+                return;
+            }
+
+            currentEditAnalisisIndex = analisis.findIndex(a => a.id === analisisId);
+
+            document.getElementById('edit_analisis_fecha').value = formatDateToInput(analisisToEdit.fecha);
+            document.getElementById('edit_analisis_num_particulas').value = analisisToEdit.numParticulas;
+            document.getElementById('edit_analisis_observaciones').value = analisisToEdit.observaciones;
+            document.getElementById('edit_analisis_sugerencia').value = analisisToEdit.sugerencia;
+            document.getElementById('edit_analisis_estado').value = analisisToEdit.estado;
+
+            document.getElementById('editAnalisisModalOverlay').classList.add('show');
+        }
+
+        function guardarEdicionAnalisis() {
+            if (currentEditAnalisisIndex === null) {
+                showMessageBox('Error', 'No hay análisis seleccionado para editar.');
+                return;
+            }
+
+            const fecha = document.getElementById('edit_analisis_fecha').value;
+            const numParticulas = document.getElementById('edit_analisis_num_particulas').value.trim();
+            const observaciones = document.getElementById('edit_analisis_observaciones').value.trim();
+            const sugerencia = document.getElementById('edit_analisis_sugerencia').value.trim();
+            const estado = document.getElementById('edit_analisis_estado').value;
+
+            if (!fecha || !estado) {
+                showMessageBox('Error', 'Los campos de Fecha y Estado son obligatorios.');
+                return;
+            }
+
+            analisis[currentEditAnalisisIndex].fecha = fecha;
+            analisis[currentEditAnalisisIndex].numParticulas = numParticulas;
+            analisis[currentEditAnalisisIndex].observaciones = observaciones;
+            analisis[currentEditAnalisisIndex].sugerencia = sugerencia;
+            analisis[currentEditAnalisisIndex].estado = estado;
+
+            guardarDatos();
+            showMessageBox('Éxito', 'Análisis actualizado correctamente.');
+            hideEditAnalisisModal();
+            // Refrescar la búsqueda por código si estamos en ella
+            buscarPorCodigo(document.getElementById('buscar_codigo_input').value);
+            actualizarTablaListado(); // para actualizar el listado general en caso de que se haya editado el último análisis
+        }
+
+        function hideEditAnalisisModal() {
+            document.getElementById('editAnalisisModalOverlay').classList.remove('show');
+            currentEditAnalisisIndex = null;
+        }
+
+        function confirmarEliminarAnalisis(analisisId, codigoMotor) {
+            showMessageBox(
+                'Confirmar Eliminación',
+                `¿Estás seguro de que deseas eliminar este análisis del motor ${codigoMotor}?`,
+                'confirm',
+                () => eliminarAnalisis(analisisId, codigoMotor)
+            );
+        }
+
+        function eliminarAnalisis(analisisId, codigoMotor) {
+            analisis = analisis.filter(a => a.id !== analisisId);
+            guardarDatos();
+            showMessageBox('Éxito', 'Análisis eliminado correctamente.');
+            // Refrescar la búsqueda por código si estamos en ella
+            buscarPorCodigo(codigoMotor);
+            actualizarTablaListado(); // para actualizar el listado general en caso de que se haya eliminado el último análisis
+        }
+
+        // --- CRUD Correcciones ---
+
+        function guardarCorreccion() {
+            const codigoMotor = document.getElementById('correccion_codigo_motor').value.trim().toUpperCase();
+            const fecha = document.getElementById('correccion_fecha').value;
+            const observacion = document.getElementById('correccion_observacion').value.trim();
+
+            if (!codigoMotor || !fecha || !observacion) {
+                showMessageBox('Error', 'Todos los campos son obligatorios.');
+                return;
+            }
+
+            const motorExiste = motores.some(motor => motor.codigo === codigoMotor);
+            if (!motorExiste) {
+                showMessageBox('Error', `El código de motor "${codigoMotor}" no existe. Por favor, ingréselo primero.`);
+                return;
+            }
+
+            const nuevaCorreccion = {
+                id: Date.now(), // ID único
+                codigoMotor: codigoMotor,
+                fecha: fecha,
+                observacion: observacion
+            };
+
+            correcciones.push(nuevaCorreccion);
+            guardarDatos();
+            showMessageBox('Éxito', 'Corrección guardada correctamente.');
+            document.getElementById('formCorrecciones').reset();
+            actualizarTablaListado(); // Refrescar el listado general
+        }
+
+        function editarCorreccion(correccionId) {
+            const correccionToEdit = correcciones.find(c => c.id === correccionId);
+            if (!correccionToEdit) {
+                showMessageBox('Error', 'Corrección no encontrada para edición.');
+                return;
+            }
+
+            currentEditCorreccionIndex = correcciones.findIndex(c => c.id === correccionId);
+
+            document.getElementById('edit_correccion_fecha').value = formatDateToInput(correccionToEdit.fecha);
+            document.getElementById('edit_correccion_observacion').value = correccionToEdit.observacion;
+
+            document.getElementById('editCorreccionModalOverlay').classList.add('show');
+        }
+
+        function guardarEdicionCorreccion() {
+            if (currentEditCorreccionIndex === null) {
+                showMessageBox('Error', 'No hay corrección seleccionada para editar.');
+                return;
+            }
+
+            const fecha = document.getElementById('edit_correccion_fecha').value;
+            const observacion = document.getElementById('edit_correccion_observacion').value.trim();
+
+            if (!fecha || !observacion) {
+                showMessageBox('Error', 'Todos los campos son obligatorios.');
+                return;
+            }
+
+            correcciones[currentEditCorreccionIndex].fecha = fecha;
+            correcciones[currentEditCorreccionIndex].observacion = observacion;
+
+            guardarDatos();
+            showMessageBox('Éxito', 'Corrección actualizada correctamente.');
+            hideEditCorreccionModal();
+            // Refrescar la búsqueda por código si estamos en ella
+            const codigoMotor = correcciones[currentEditCorreccionIndex].codigoMotor;
+            buscarPorCodigo(codigoMotor);
+            actualizarTablaListado(); // para actualizar el listado general en caso de que se haya editado la última corrección
+        }
+
+        function hideEditCorreccionModal() {
+            document.getElementById('editCorreccionModalOverlay').classList.remove('show');
+            currentEditCorreccionIndex = null;
+        }
+
+        function confirmarEliminarCorreccion(correccionId, codigoMotor) {
+            showMessageBox(
+                'Confirmar Eliminación',
+                `¿Estás seguro de que deseas eliminar esta corrección del motor ${codigoMotor}?`,
+                'confirm',
+                () => eliminarCorreccion(correccionId, codigoMotor)
+            );
+        }
+
+        function eliminarCorreccion(correccionId, codigoMotor) {
+            correcciones = correcciones.filter(c => c.id !== correccionId);
+            guardarDatos();
+            showMessageBox('Éxito', 'Corrección eliminada correctamente.');
+            // Refrescar la búsqueda por código si estamos en ella
+            buscarPorCodigo(codigoMotor);
+            actualizarTablaListado(); // para actualizar el listado general en caso de que se haya eliminado la última corrección
+        }
+
+
+        // --- Búsqueda por Código ---
+
+        function buscarPorCodigo(codigoOverride = null) {
+            const codigoInput = codigoOverride || document.getElementById('buscar_codigo_input').value.trim().toUpperCase();
+            if (!codigoInput) {
+                limpiarResultadosBusquedaCodigo();
+                showMessageBox('Información', 'Por favor, ingrese un código de motor.');
+                return;
+            }
+
+            const motorEncontrado = motores.find(motor => motor.codigo === codigoInput);
+
+            if (!motorEncontrado) {
+                limpiarResultadosBusquedaCodigo();
+                showMessageBox('Error', `No se encontró ningún motor con el código "${codigoInput}".`);
+                return;
+            }
+
+            // Mostrar información general del motor
+            document.getElementById('infoMotorCodigo_codigo').textContent = motorEncontrado.codigo;
+            document.getElementById('infoMotorCodigo_maquina').textContent = motorEncontrado.maquina;
+            document.getElementById('infoMotorCodigo_ubicacion').textContent = motorEncontrado.ubicacion;
+            document.getElementById('infoMotorCodigo_tipoLubricacion').textContent = motorEncontrado.tipo_lubricacion;
+
+            // Historial de Análisis
+            const analisisMotor = analisis.filter(a => a.codigoMotor === codigoInput)
+                .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Ordenar por fecha descendente
+
+            const tbodyAnalisis = document.getElementById('tablaAnalisisCodigo').getElementsByTagName('tbody')[0];
+            tbodyAnalisis.innerHTML = '';
+            if (analisisMotor.length > 0) {
+                analisisMotor.forEach(analisisItem => {
+                    const row = tbodyAnalisis.insertRow();
+                    row.insertCell(0).textContent = formatDateToDisplay(analisisItem.fecha);
+                    row.insertCell(1).textContent = analisisItem.numParticulas || 'N/A';
+                    row.insertCell(2).textContent = analisisItem.estado.charAt(0).toUpperCase() + analisisItem.estado.slice(1);
+
+                    const sugerenciaCell = row.insertCell(3);
+                    sugerenciaCell.textContent = analisisItem.sugerencia || 'N/A';
+                    if (analisisItem.sugerencia && analisisItem.sugerencia.length > 50) { // Cortar si es muy largo
+                        sugerenciaCell.textContent = analisisItem.sugerencia.substring(0, 50) + '...';
+                        sugerenciaCell.title = analisisItem.sugerencia; // Mostrar completo en tooltip
+                        sugerenciaCell.classList.add('clickable-cell');
+                        sugerenciaCell.onclick = () => showMessageBox('Sugerencia Completa', analisisItem.sugerencia);
+                    }
+
+                    const observacionesCell = row.insertCell(4);
+                    observacionesCell.textContent = analisisItem.observaciones || 'N/A';
+                    if (analisisItem.observaciones && analisisItem.observaciones.length > 50) { // Cortar si es muy largo
+                        observacionesCell.textContent = analisisItem.observaciones.substring(0, 50) + '...';
+                        observacionesCell.title = analisisItem.observaciones; // Mostrar completo en tooltip
+                        observacionesCell.classList.add('clickable-cell');
+                        observacionesCell.onclick = () => showMessageBox('Observación Completa', analisisItem.observaciones);
+                    }
+
+
+                    const accionesCell = row.insertCell(5);
+                    accionesCell.className = 'acciones-celda';
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Editar';
+                    editBtn.onclick = () => editarAnalisis(analisisItem.id);
+                    accionesCell.appendChild(editBtn);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Eliminar';
+                    deleteBtn.className = 'eliminar';
+                    deleteBtn.onclick = () => confirmarEliminarAnalisis(analisisItem.id, codigoInput);
+                    accionesCell.appendChild(deleteBtn);
+                });
+
+                // Mostrar últimos dos estados de análisis para comparación rápida
+                const ultimosDosAnalisis = analisisMotor.slice(0, 2);
+                document.getElementById('analisis_fecha_actual').textContent = ultimosDosAnalisis.length > 0 ? formatDateToDisplay(ultimosDosAnalisis[0].fecha) : 'N/A';
+                document.getElementById('analisis_estado_actual').textContent = ultimosDosAnalisis.length > 0 ? ultimosDosAnalisis[0].estado.charAt(0).toUpperCase() + ultimosDosAnalisis[0].estado.slice(1) : 'N/A';
+                document.getElementById('analisis_particulas_actual').textContent = ultimosDosAnalisis.length > 0 ? (ultimosDosAnalisis[0].numParticulas || 'N/A') : 'N/A';
+
+                document.getElementById('analisis_fecha_anterior').textContent = ultimosDosAnalisis.length > 1 ? formatDateToDisplay(ultimosDosAnalisis[1].fecha) : 'N/A';
+                document.getElementById('analisis_estado_anterior').textContent = ultimosDosAnalisis.length > 1 ? ultimosDosAnalisis[1].estado.charAt(0).toUpperCase() + ultimosDosAnalisis[1].estado.slice(1) : 'N/A';
+                document.getElementById('analisis_particulas_anterior').textContent = ultimosDosAnalisis.length > 1 ? (ultimosDosAnalisis[1].numParticulas || 'N/A') : 'N/A';
+
+            } else {
+                tbodyAnalisis.innerHTML = '<tr><td colspan="6">No hay análisis registrados para este motor.</td></tr>';
+                // Limpiar la tabla de últimos estados si no hay análisis
+                document.getElementById('analisis_fecha_anterior').textContent = 'N/A';
+                document.getElementById('analisis_estado_anterior').textContent = 'N/A';
+                document.getElementById('analisis_particulas_anterior').textContent = 'N/A';
+                document.getElementById('analisis_fecha_actual').textContent = 'N/A';
+                document.getElementById('analisis_estado_actual').textContent = 'N/A';
+                document.getElementById('analisis_particulas_actual').textContent = 'N/A';
+            }
+
+            // Historial de Correcciones
+            const correccionesMotor = correcciones.filter(c => c.codigoMotor === codigoInput)
+                .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Ordenar por fecha descendente
+
+            const tbodyCorrecciones = document.getElementById('tablaCorreccionesCodigo').getElementsByTagName('tbody')[0];
+            tbodyCorrecciones.innerHTML = '';
+            if (correccionesMotor.length > 0) {
+                correccionesMotor.forEach(correccionItem => {
+                    const row = tbodyCorrecciones.insertRow();
+                    row.insertCell(0).textContent = formatDateToDisplay(correccionItem.fecha);
+                    const observacionCell = row.insertCell(1);
+                    observacionCell.textContent = correccionItem.observacion;
+                    if (correccionItem.observacion.length > 80) { // Cortar si es muy largo
+                        observacionCell.textContent = correccionItem.observacion.substring(0, 80) + '...';
+                        observacionCell.title = correccionItem.observacion; // Mostrar completo en tooltip
+                        observacionCell.classList.add('clickable-cell');
+                        observacionCell.onclick = () => showMessageBox('Observación Completa', correccionItem.observacion);
+                    }
+
+                    const accionesCell = row.insertCell(2);
+                    accionesCell.className = 'acciones-celda';
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Editar';
+                    editBtn.onclick = () => editarCorreccion(correccionItem.id);
+                    accionesCell.appendChild(editBtn);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Eliminar';
+                    deleteBtn.className = 'eliminar';
+                    deleteBtn.onclick = () => confirmarEliminarCorreccion(correccionItem.id, codigoInput);
+                    accionesCell.appendChild(deleteBtn);
+                });
+            } else {
+                tbodyCorrecciones.innerHTML = '<tr><td colspan="3">No hay correcciones registradas para este motor.</td></tr>';
+            }
+        }
+
+
+        // --- Búsqueda por Máquina ---
+
+        function actualizarListaMaquinas() {
+            const selectMaquina = document.getElementById('buscar_maquina_select');
+            selectMaquina.innerHTML = '<option value="">Seleccione una máquina</option>'; // Limpiar opciones
+
+            const maquinasUnicas = [...new Set(motores.map(motor => motor.maquina))].sort(); // Obtener nombres únicos y ordenar
+
+            maquinasUnicas.forEach(maquina => {
+                const option = document.createElement('option');
+                option.value = maquina;
+                option.textContent = maquina;
+                selectMaquina.appendChild(option);
+            });
+        }
+
+        function buscarPorMaquina() {
+            const maquinaSeleccionada = document.getElementById('buscar_maquina_select').value;
+            const tbodyResultados = document.getElementById('tablaResultadosMaquina').getElementsByTagName('tbody')[0];
+            tbodyResultados.innerHTML = '';
+
+            if (!maquinaSeleccionada) {
+                return; // No hacer nada si no hay máquina seleccionada
+            }
+
+            const motoresEncontrados = motores.filter(motor => motor.maquina === maquinaSeleccionada)
+                .sort((a, b) => a.codigo.localeCompare(b.codigo)); // Ordenar por código
+
+            if (motoresEncontrados.length > 0) {
+                motoresEncontrados.forEach(motor => {
+                    const row = tbodyResultados.insertRow();
+                    const ultimosAnalisisMotor = analisis
+                        .filter(a => a.codigoMotor === motor.codigo)
+                        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                    const ultimoAnalisis = ultimosAnalisisMotor.length > 0 ? ultimosAnalisisMotor[0] : null;
+
+                    row.insertCell(0).textContent = motor.codigo;
+                    row.insertCell(1).textContent = motor.maquina;
+                    row.insertCell(2).textContent = motor.ubicacion;
+                    row.insertCell(3).textContent = motor.tipo_lubricacion;
+                    row.insertCell(4).textContent = ultimoAnalisis ? formatDateToDisplay(ultimoAnalisis.fecha) : 'N/A';
+                    row.insertCell(5).textContent = ultimoAnalisis ? ultimoAnalisis.estado.charAt(0).toUpperCase() + ultimoAnalisis.estado.slice(1) : 'N/A';
+                });
+            } else {
+                tbodyResultados.innerHTML = '<tr><td colspan="6">No se encontraron motores para esta máquina.</td></tr>';
+            }
+        }
+
+        // --- Planificación por Ruta ---
+
+        function actualizarTablaRuta() {
+            const tbody = document.getElementById('sortable-tbody');
+            tbody.innerHTML = ''; // Limpiar tabla
+
+            const filtroEstado = document.getElementById('filtro_estado_ruta').value;
+
+            // Para la planificación, queremos todos los motores. El estado de la ruta se gestiona aparte.
+            // Si el motor no tiene estado de ruta, lo inicializamos en "En espera".
+            // Ordenar por el orden de la planificación guardado en el motor, si existe.
+            const motoresParaRuta = [...motores].sort((a, b) => {
+                if (a.planificacionOrder === undefined && b.planificacionOrder === undefined) return a.codigo.localeCompare(b.codigo);
+                if (a.planificacionOrder === undefined) return 1;
+                if (b.planificacionOrder === undefined) return -1;
+                return a.planificacionOrder - b.planificacionOrder;
+            });
+
+
+            motoresParaRuta.forEach(motor => {
+                const ultimosAnalisisMotor = analisis
+                    .filter(a => a.codigoMotor === motor.codigo)
+                    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                const ultimoAnalisis = ultimosAnalisisMotor.length > 0 ? ultimosAnalisisMotor[0] : null;
+
+                // Si el motor no tiene un estado de ruta definido, establecerlo a 'En espera' por defecto
+                if (!motor.estadoRuta) {
+                    motor.estadoRuta = 'En espera';
+                }
+
+                // Aplicar filtro
+                if (filtroEstado !== 'todos' && motor.estadoRuta !== filtroEstado) {
+                    return; // Saltar esta fila si no coincide con el filtro
+                }
+
+                const row = tbody.insertRow();
+                row.setAttribute('data-codigo-motor', motor.codigo); // Usar data-attribute para el código
+                row.insertCell(0).textContent = motor.codigo;
+                row.insertCell(1).textContent = motor.maquina;
+                row.insertCell(2).textContent = motor.ubicacion;
+                row.insertCell(3).textContent = ultimoAnalisis ? formatDateToDisplay(ultimoAnalisis.fecha) : 'N/A';
+                row.insertCell(4).textContent = ultimoAnalisis ? ultimoAnalisis.estado.charAt(0).toUpperCase() + ultimoAnalisis.estado.slice(1) : 'N/A';
+
+                const estadoRutaCell = row.insertCell(5);
+                // Dropdown para edición en modo normal
+                const selectEstado = document.createElement('select');
+                selectEstado.className = 'estado-dropdown';
+                selectEstado.innerHTML = `
+                    <option value="En espera">En espera</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Realizado">Realizado</option>
+                `;
+                selectEstado.value = motor.estadoRuta;
+                selectEstado.onchange = (e) => {
+                    motor.estadoRuta = e.target.value;
+                    guardarDatos();
+                    actualizarTablaRuta(); // Refrescar la tabla para aplicar el filtro si cambió
+                };
+                estadoRutaCell.appendChild(selectEstado);
+
+                // Elemento de texto para impresión
+                const printStatusSpan = document.createElement('span');
+                printStatusSpan.className = 'print-status';
+                printStatusSpan.textContent = motor.estadoRuta;
+                printStatusSpan.style.display = 'none'; // Oculto por defecto, solo para impresión
+                estadoRutaCell.appendChild(printStatusSpan);
+            });
+            guardarDatos(); // Guardar cualquier cambio de estadoRuta predeterminado
+        }
+
+        function initSortable() {
+            const el = document.getElementById('sortable-tbody');
+            if (el.sortable) { // Si ya está inicializado, destruirlo primero
+                el.sortable.destroy();
+            }
+            el.sortable = Sortable.create(el, {
+                animation: 150,
+                onEnd: function(evt) {
+                    // Obtener el nuevo orden de los códigos de motor
+                    const newOrderCodes = Array.from(evt.to.children).map(row => row.getAttribute('data-codigo-motor'));
+
+                    // Actualizar la propiedad 'planificacionOrder' en el array de motores
+                    newOrderCodes.forEach((code, index) => {
+                        const motor = motores.find(m => m.codigo === code);
+                        if (motor) {
+                            motor.planificacionOrder = index;
+                        }
+                    });
+
+                    // Ordenar el array de motores según el nuevo planificacionOrder
+                    motores.sort((a, b) => {
+                        if (a.planificacionOrder === undefined && b.planificacionOrder === undefined) return a.codigo.localeCompare(b.codigo);
+                        if (a.planificacionOrder === undefined) return 1;
+                        if (b.planificacionOrder === undefined) return -1;
+                        return a.planificacionOrder - b.planificacionOrder;
+                    });
+
+                    guardarDatos();
+                    // No es necesario llamar a actualizarTablaRuta() si Sortable.js ya ha movido los elementos en el DOM
+                    // Pero si el filtro está activo, puede que necesitemos refrescar para re-aplicar el filtro de estadoRuta
+                    // actualizandoTablaRuta();
+                }
+            });
+        }
+
+        function cambiarEstadoMasivo() {
+            const numProceso = parseInt(document.getElementById('num_motores_proceso').value);
+            if (isNaN(numProceso) || numProceso <= 0) {
+                showMessageBox('Error', 'Ingrese un número válido para cambiar el estado masivamente.');
+                return;
+            }
+
+            // Filtrar y ordenar los motores por estado 'En espera' y luego por su orden de planificación
+            const motoresEnEsperaOrdenados = motores
+                .filter(m => m.estadoRuta === 'En espera')
+                .sort((a, b) => {
+                    // Priorizar los que ya tienen un orden de planificación, luego por código
+                    if (a.planificacionOrder === undefined && b.planificacionOrder === undefined) return a.codigo.localeCompare(b.codigo);
+                    if (a.planificacionOrder === undefined) return 1;
+                    if (b.planificacionOrder === undefined) return -1;
+                    return a.planificacionOrder - b.planificacionOrder;
+                });
+
+            let cambiosRealizados = 0;
+            for (let i = 0; i < Math.min(numProceso, motoresEnEsperaOrdenados.length); i++) {
+                const motor = motoresEnEsperaOrdenados[i];
+                // Encontrar el motor original en el array global 'motores' para actualizarlo
+                const motorIndex = motores.findIndex(m => m.codigo === motor.codigo);
+                if (motorIndex !== -1) {
+                    motores[motorIndex].estadoRuta = 'En proceso';
+                    cambiosRealizados++;
+                }
+            }
+
+            guardarDatos();
+            actualizarTablaRuta();
+            showMessageBox('Éxito', `${cambiosRealizados} motores han sido cambiados a "En proceso".`);
+        }
+
+        function imprimirPlanificacion() {
+            window.print();
+        }
+
+        // --- Cuadro Comparativo ---
+
+        function generarCuadroComparativo() {
+            const codigosInput = document.getElementById('comparativo_codigos').value.trim();
+            const codigos = codigosInput.split(',').map(c => c.trim().toUpperCase()).filter(c => c !== '');
+
+            const tbodyComparativa = document.getElementById('tablaComparativa').getElementsByTagName('tbody')[0];
+            tbodyComparativa.innerHTML = '';
+
+            if (codigos.length === 0) {
+                showMessageBox('Información', 'Por favor, ingrese al menos un código de motor para comparar.');
+                return;
+            }
+
+            let motoresEncontradosParaComparar = [];
+            let codigosNoEncontrados = [];
+
+            codigos.forEach(codigo => {
+                const motor = motores.find(m => m.codigo === codigo);
+                if (motor) {
+                    motoresEncontradosParaComparar.push(motor);
+                } else {
+                    codigosNoEncontrados.push(codigo);
+                }
+            });
+
+            if (codigosNoEncontrados.length > 0) {
+                showMessageBox('Advertencia', `Los siguientes códigos de motor no fueron encontrados: ${codigosNoEncontrados.join(', ')}`);
+            }
+
+            if (motoresEncontradosParaComparar.length === 0) {
+                tbodyComparativa.innerHTML = '<tr><td colspan="7">No se encontraron motores válidos para comparar.</td></tr>';
+                return;
+            }
+
+            motoresEncontradosParaComparar.sort((a, b) => a.codigo.localeCompare(b.codigo)); // Ordenar por código
+
+            motoresEncontradosParaComparar.forEach(motor => {
+                const row = tbodyComparativa.insertRow();
+                const ultimosAnalisisMotor = analisis
+                    .filter(a => a.codigoMotor === motor.codigo)
+                    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                const ultimoAnalisis = ultimosAnalisisMotor.length > 0 ? ultimosAnalisisMotor[0] : null;
+
+                row.insertCell(0).textContent = motor.codigo;
+                row.insertCell(1).textContent = motor.maquina;
+                row.insertCell(2).textContent = motor.ubicacion;
+                row.insertCell(3).textContent = motor.tipo_lubricacion;
+                row.insertCell(4).textContent = ultimoAnalisis ? formatDateToDisplay(ultimoAnalisis.fecha) : 'N/A';
+                row.insertCell(5).textContent = ultimoAnalisis ? ultimoAnalisis.sugerencia || 'N/A' : 'N/A';
+                row.insertCell(6).textContent = ultimoAnalisis ? ultimoAnalisis.estado.charAt(0).toUpperCase() + ultimoAnalisis.estado.slice(1) : 'N/A';
+            });
+        }
+
+        // --- Gráficos de Tendencia ---
+        let analisisChartInstance;
+        let particulasChartInstance;
+
+        function generarGraficos() {
+            const codigoMotor = document.getElementById('grafico_codigo_motor').value.trim().toUpperCase();
+            const graficoMensaje = document.getElementById('grafico_mensaje');
+
+            graficoMensaje.textContent = ''; // Limpiar mensajes anteriores
+
+            if (!codigoMotor) {
+                graficoMensaje.textContent = 'Por favor, ingrese un código de motor.';
+                if (analisisChartInstance) analisisChartInstance.destroy();
+                if (particulasChartInstance) particulasChartInstance.destroy();
+                return;
+            }
+
+            const motorExiste = motores.some(motor => motor.codigo === codigoMotor);
+            if (!motorExiste) {
+                graficoMensaje.textContent = `El código de motor "${codigoMotor}" no existe.`;
+                if (analisisChartInstance) analisisChartInstance.destroy();
+                if (particulasChartInstance) particulasChartInstance.destroy();
+                return;
+            }
+
+            const analisisFiltrados = analisis
+                .filter(a => a.codigoMotor === codigoMotor && a.fecha) // Solo análisis con fecha
+                .sort((a, b) => new Date(a.fecha) - new Date(b.fecha)); // Ordenar por fecha ascendente
+
+            if (analisisFiltrados.length < 2) {
+                graficoMensaje.textContent = `Se requieren al menos 2 análisis con fecha para generar gráficos de tendencia para el motor "${codigoMotor}".`;
+                if (analisisChartInstance) analisisChartInstance.destroy();
+                if (particulasChartInstance) particulasChartInstance.destroy();
+                return;
+            }
+
+            // Preparar datos para el gráfico de Estado
+            const labelsEstado = analisisFiltrados.map(a => formatDateToDisplay(a.fecha));
+            const dataEstado = analisisFiltrados.map(a => {
+                // Mapear estados a valores numéricos para el gráfico de línea
+                if (a.estado === 'normal') return 1;
+                if (a.estado === 'advertencia') return 2;
+                if (a.estado === 'crítico') return 3;
+                return 0; // Otro estado o indefinido
+            });
+
+            // Destruir gráficos anteriores si existen
+            if (window.analisisChartInstance) {
+                window.analisisChartInstance.destroy();
+            }
+            if (window.particulasChartInstance) {
+                window.particulasChartInstance.destroy();
+            }
+
+            // Gráfico de Tendencia de Estado
+            const ctxAnalisis = document.getElementById('analisisChart').getContext('2d');
+            window.analisisChartInstance = new Chart(ctxAnalisis, {
+                type: 'line',
+                data: {
+                    labels: labelsEstado,
+                    datasets: [{
+                        label: 'Estado del Análisis',
+                        data: dataEstado,
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 3.5,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    if (value === 1) return 'Normal';
+                                    if (value === 2) return 'Advertencia';
+                                    if (value === 3) return 'Crítico';
+                                    return '';
+                                },
+                                color: '#cbd5e1'
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.5)' // Color de las líneas de la cuadrícula
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#cbd5e1'
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.5)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#cbd5e1' // Color del texto de la leyenda
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Preparar datos para el gráfico de Partículas
+            const labelsParticulas = analisisFiltrados.map(a => formatDateToDisplay(a.fecha));
+            const dataParticulas = analisisFiltrados.map(a => parseFloat(a.numParticulas) || 0); // Convertir a número, 0 si no es válido
+
+            // Gráfico de Tendencia de Número de Partículas
+            const ctxParticulas = document.getElementById('particulasChart').getContext('2d');
+            window.particulasChartInstance = new Chart(ctxParticulas, {
+                type: 'line',
+                data: {
+                    labels: labelsParticulas,
+                    datasets: [{
+                        label: 'Número de Partículas',
+                        data: dataParticulas,
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#cbd5e1'
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.5)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#cbd5e1'
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.5)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#cbd5e1'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        // --- Inicialización ---
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarDatos();
+            actualizarEstadisticas();
+            // Mantener el mensaje de bienvenida visible al cargar la página por primera vez
+            welcomeMessageBox.style.display = 'block';
+            formularios.forEach(form => form.classList.remove('active')); // Asegurar que todos los formularios estén ocultos
+        });
+
+    </script>
+</body>
+</html>
